@@ -1,0 +1,191 @@
+{% extends "layout/base.html" %} {% block content %}
+<section>
+    <h3>Formulir Aktivitas : Zhafirah</h3>
+    <div class="card">
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">
+                    <strong>Aktivitas</strong>
+                </label>
+                <div class="form-check">
+                    <input class="form-submission form-check-input" type="radio" name="aktivitas" id="activity-batuk"
+                        value="Batuk" checked>
+                    <label class="form-check-label" for="activity-batuk">
+                        Batuk
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-submission form-check-input" type="radio" name="aktivitas"
+                        id="activity-nebulizer" value="Nebulizer">
+                    <label class="form-check-label" for="activity-nebulizer">
+                        Nebulizer
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-submission form-check-input" type="radio" name="aktivitas"
+                        id="activity-visite-perawat" value="Visite Perawat">
+                    <label class="form-check-label" for="activity-visite-perawat">
+                        Visite Perawat
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-submission form-check-input" type="radio" name="aktivitas"
+                        id="activity-visite-dokter" value="Visite Dokter">
+                    <label class="form-check-label" for="activity-visite-dokter">
+                        Visite Dokter
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-submission form-check-input" type="radio" name="aktivitas" id="activity-catatan"
+                        value="Catatan">
+                    <label class="form-check-label" for="activity-catatan">
+                        Catatan
+                    </label>
+                </div>
+            </div>
+            <div class="mb-3" id="activity-batuk-container">
+                <label class="form-label">
+                    <strong>Keadaan</strong>
+                </label>
+                <div class="form-check">
+                    <input class="form-submission form-check-input" type="radio" name="kesadaran" id="kesadaran-sadar"
+                        value="Terjaga" checked>
+                    <label class="form-check-label" for="kesadaran-sadar">
+                        Terjaga
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-submission form-check-input" type="radio" name="kesadaran" id="kesadaran-tidur"
+                        value="Tertidur">
+                    <label class="form-check-label" for="kesadaran-tidur">
+                        Tertidur
+                    </label>
+                </div>
+            </div>
+            <div class="mb-3 hide" id="activity-visite-container">
+                <label class="form-label" for="keterangan_visite">
+                    <strong>Keterangan</strong>
+                </label>
+                <textarea class="form-submission form-control" id="keterangan_visite" name="keterangan_visite"
+                    rows="3"></textarea>
+            </div>
+            <div class="d-grid gap-2">
+                <button class="form-submission btn btn-outline-primary" id="btn-submit" type="button">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3">
+        <div class="toast align-items-center text-white bg-success border-0" id="toast-success" role="alert"
+            aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    Data berhasil disimpan
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                    aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3">
+        <div class="toast align-items-center text-white bg-danger border-0" id="toast-failed" role="alert"
+            aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    Data gagal disimpan
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                    aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+</section>
+
+<script>
+    const formComponent = {
+        fieldActivity: '[name=aktivitas]:checked',
+        fieldKesadaran: '[name=kesadaran]:checked',
+        $fieldKeteranganVisite: $('[name=keterangan_visite]'),
+        $activityBatukContainer: $('#activity-batuk-container'),
+        $activityVisiteContainer: $('#activity-visite-container'),
+        $btnSubmit: $('#btn-submit'),
+        startLoading() {
+            $('.form-submission').prop('disabled', true);
+        },
+        stopLoading() {
+            $('.form-submission').prop('disabled', false);
+        },
+        renderDetailActivity() {
+            const activity = $(this.fieldActivity).val();
+            if (activity == 'Batuk') {
+                this.$activityVisiteContainer.addClass('hide');
+                this.$activityBatukContainer.removeClass('hide');
+            } else if (['Visite Perawat', 'Visite Dokter', 'Catatan'].includes(activity)) {
+                this.$activityBatukContainer.addClass('hide');
+                this.$activityVisiteContainer.removeClass('hide');
+            } else {
+                this.$activityBatukContainer.addClass('hide');
+                this.$activityVisiteContainer.addClass('hide');
+            }
+        },
+        getPayload() {
+            const activity = $(this.fieldActivity).val();
+            if (activity == 'Batuk') {
+                return this.getPayloadBatuk();
+            } else if (['Visite Perawat', 'Visite Dokter', 'Catatan'].includes(activity)) {
+                return this.getPayloadVisite();
+            } else {
+                return this.getPayloadNebulizer();
+            }
+        },
+        getPayloadBatuk() {
+            return {
+                activity: $(this.fieldActivity).val(),
+                keterangan: $(this.fieldKesadaran).val(),
+            };
+        },
+        getPayloadVisite() {
+            return {
+                activity: $(this.fieldActivity).val(),
+                keterangan: this.$fieldKeteranganVisite.val(),
+            };
+        },
+        getPayloadNebulizer() {
+            return {
+                activity: $(this.fieldActivity).val(),
+                keterangan: null,
+            };
+        },
+        store() {
+            this.startLoading();
+            $.ajax({
+                method: 'POST',
+                url: '{{baseUrl}}api/v1/activities',
+                data: JSON.stringify(formComponent.getPayload()),
+                contentType: 'application/json; charset=UTF-8',
+                dataType: 'json',
+                success: function (response) {
+                    (new bootstrap.Toast(document.getElementById('toast-success'))).show();
+                    formComponent.stopLoading();
+                },
+                error: function (error) {
+                    (new bootstrap.Toast(document.getElementById('toast-failed'))).show();
+                    formComponent.stopLoading();
+                }
+            });
+        }
+    };
+
+    $(document).ready(function () {
+        $('[name=aktivitas]').on('click', function () {
+            formComponent.renderDetailActivity();
+        });
+
+        formComponent.$btnSubmit.on('click', function () {
+            formComponent.store();
+        });
+    });
+</script>
+{% endblock %}

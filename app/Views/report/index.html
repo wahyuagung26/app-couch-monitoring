@@ -1,0 +1,149 @@
+{% extends "layout/base.html" %} {% block content %}
+<section>
+    <h3>Riwayat Aktivitas : Zhafirah</h3>
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">
+                    <strong>Mulai Jam</strong>
+                </label>
+                <div>
+                    <input type="datetime-local" class="form-control form-submission" id="start-date" name="start-date"
+                        value="">
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">
+                    <strong>Sampai Jam</strong>
+                </label>
+                <div>
+                    <input type="datetime-local" class="form-control form-submission" id="end-date" name="end-date"
+                        value="">
+                </div>
+            </div>
+            <div class="d-grid gap-2">
+                <button class="form-submission btn btn-outline-primary" id="btn-submit" type="button">Tampilkan</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <p>
+                Total batuk : <strong id="total-batuk">0 Kali</strong>
+            </p>
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th scope="col">Tanggal & Jam</th>
+                            <th scope="col">Aktivitas</th>
+                            <th scope="col">Keterangan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="list-activity">
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3">
+        <div class="toast align-items-center text-white bg-danger border-0" id="toast-failed" role="alert"
+            aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    Data gagal ditampilkan
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                    aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+</section>
+
+<script>
+    const reportComponent = {
+        $listActivity: $('#list-activity'),
+        $totalCough: $('#total-batuk'),
+        $fieldStartDate: $('#start-date'),
+        $fieldEndDate: $('#end-date'),
+        $btnSubmit: $('#btn-submit'),
+        startLoading() {
+            $('.form-submission').prop('disabled', true);
+        },
+        stopLoading() {
+            $('.form-submission').prop('disabled', false);
+        },
+        async render() {
+            const row = await this.fetchHistory();
+            if (!row?.activities) {
+                return false;
+            }
+
+            let tableRow = '';
+            row?.activities.forEach((val) => {
+                tableRow += `
+                    <tr>
+                        <td>${moment(val.created_at).format('DD-MM-YYYY HH:mm:ss')}</td>
+                        <td>${val.activity_name}</td>
+                        <td>${val?.activity_note ?? ''}</td>
+                    </tr>
+                `;
+            });
+
+            reportComponent.$listActivity.html(tableRow);
+            reportComponent.$totalCough.text(`${row?.total_batuk ?? 0} Kali`);
+        },
+        async fetchHistory() {
+            this.$listActivity.html('<tr><td colspan="3">No data available</td></tr>');
+            this.startLoading();
+            let rows = [];
+            let total_batuk = 0;
+            await $.ajax({
+                method: 'GET',
+                url: '{{baseUrl}}api/v1/activities',
+                data: reportComponent.getPayload(),
+                contentType: 'application/json; charset=UTF-8',
+                dataType: 'json',
+                success: function (response) {
+                    rows = response.data?.activities ?? [];
+                    total_batuk = response.data?.total_batuk ?? 0;
+                    reportComponent.stopLoading();
+                },
+                error: function (error) {
+                    reportComponent.stopLoading();
+                    (new bootstrap.Toast(document.getElementById('toast-failed'))).show();
+                }
+            });
+
+            return {
+                activities: rows,
+                total_batuk: total_batuk
+            };
+        },
+        getPayload() {
+            return {
+                start_date: moment(this.$fieldStartDate.val()).format('YYYY-MM-DD HH:mm:ss'),
+                end_date: moment(this.$fieldEndDate.val()).format('YYYY-MM-DD HH:mm:ss')
+            };
+        }
+    };
+
+    $(document).ready(function () {
+        $('[name=aktivitas]').on('click', function () {
+            reportComponent.renderDetailActivity();
+        });
+
+        reportComponent.$btnSubmit.on('click', function () {
+            reportComponent.render();
+        });
+    });
+</script>
+{% endblock %}
